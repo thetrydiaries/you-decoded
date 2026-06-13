@@ -1,42 +1,42 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 interface Props {
   slug: string;
 }
 
 export function DecodingPoller({ slug }: Props) {
-  const isFetchingRef = useRef(false);
-
   useEffect(() => {
-    async function checkDecode() {
-      // Don't fire a new request while one is already running
-      if (isFetchingRef.current) return;
-      isFetchingRef.current = true;
-      try {
-        const res = await fetch(`/api/decode/${slug}`);
-        const data = await res.json();
+    // Fire the decode (POST) once — don't await it.
+    // The POST runs the full ~40s decode on the server independently.
+    // keepalive lets it survive a page unload if the browser navigates away first.
+    fetch(`/api/decode/${slug}`, { method: "POST", keepalive: true }).catch(() => {});
 
-        if (data.status === "complete" || data.status === "error") {
-          // Reload — the server component re-reads DB status fresh (noStore).
-          // "complete" → shows PassportView. "error" → shows error UI.
-          window.location.reload();
-          return;
+    // Poll the status (GET) every 4s — this is just a fast DB read
+    let active = true;
+
+    async function poll() {
+      while (active) {
+        await new Promise((r) => setTimeout(r, 4000));
+        if (!active) break;
+        try {
+          const res = await fetch(`/api/decode/${slug}`);
+          const data = await res.json();
+          if (data.status === "complete" || data.status === "error") {
+            window.location.reload();
+            return;
+          }
+        } catch {
+          // network hiccup — retry next tick
         }
-
-        // "pending" = already decoding in another request, keep polling.
-        // Any other response = keep polling.
-      } catch {
-        // network error — retry on next interval tick
-      } finally {
-        isFetchingRef.current = false;
       }
     }
 
-    checkDecode(); // kick off immediately
-    const interval = setInterval(checkDecode, 4000);
-    return () => clearInterval(interval);
+    poll();
+    return () => {
+      active = false;
+    };
   }, [slug]);
 
   return null;

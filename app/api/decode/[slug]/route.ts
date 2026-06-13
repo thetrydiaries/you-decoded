@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { computeAllBirthModalities } from "@/lib/engine/compute-birth";
 import { computeAllQuizModalities } from "@/lib/engine/compute-quiz";
@@ -9,7 +8,37 @@ import type { BirthData, QuizAnswers } from "@/lib/types";
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
+/**
+ * GET — fast status check only. Called every 4s by DecodingPoller.
+ * Never runs Claude. Returns in < 500ms.
+ */
 export async function GET(
+  _req: Request,
+  { params }: { params: { slug: string } }
+) {
+  const { slug } = params;
+  const { data, error } = await supabaseAdmin()
+    .from("passports")
+    .select("status")
+    .eq("share_slug", slug)
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (data.status === "complete") return NextResponse.json({ status: "complete" });
+  if (data.status === "error") return NextResponse.json({ status: "error" });
+  return NextResponse.json({ status: "pending" });
+}
+
+/**
+ * POST — runs the full decode pipeline (~40-50s).
+ * DecodingPoller fires this once without awaiting the response.
+ * Vercel keeps the Lambda alive until it returns, even if the browser
+ * disconnects, so the DB always gets updated to complete/error.
+ */
+export async function POST(
   _req: Request,
   { params }: { params: { slug: string } }
 ) {
@@ -23,29 +52,23 @@ export async function GET(
     .single();
 
   if (error || !passport) {
-    return NextResponse.json({ error: "Passport not found" }, { status: 404 });
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (passport.status === "complete") {
-    return NextResponse.json({ status: "complete" });
+  if (passport.status === "complete" || passport.status === "error") {
+    return NextResponse.json({ status: passport.status });
   }
 
-  if (passport.status === "error") {
-    return NextResponse.json({ status: "error" });
-  }
-
-  // Another instance already claimed the decode — fast poll back
   if (passport.status === "processing") {
     return NextResponse.json({ status: "pending" });
   }
 
   if (passport.status !== "decoding") {
-    return NextResponse.json({ error: "Passport not ready for decoding" }, { status: 400 });
+    return NextResponse.json({ error: "Not ready" }, { status: 400 });
   }
 
-  // Atomic DB-level lock: only one Vercel instance wins this UPDATE.
-  // Every concurrent tab / reload / instance that loses the race finds
-  // 0 rows updated and returns "pending" — no duplicate Claude calls.
+  // Atomic lock — only one Vercel instance wins this UPDATE.
+  // Concurrent POSTs (extra tabs, reloads) see 0 rows and return early.
   const { data: locked } = await db
     .from("passports")
     .update({ status: "processing" })
@@ -57,40 +80,21 @@ export async function GET(
     return NextResponse.json({ status: "pending" });
   }
 
-  const birth: BirthData = {
-    date: passport.birth_date,
-    time: passport.birth_time ?? null,
-    place: passport.birth_place,
-    lat: passport.birth_lat ?? null,
-    lng: passport.birth_lng ?? null,
-    timezone: passport.birth_tz ?? null,
-  };
-  const quizAnswers: QuizAnswers = passport.quiz_answers ?? {};
-
-  // Run the decode in the background — the response returns immediately so the
-  // client never waits 40-50s for the first poll. Vercel keeps the function alive
-  // (up to maxDuration) while waitUntil finishes, then tears it down cleanly.
-  waitUntil(
-    runDecodeWithCleanup(slug, db, birth, quizAnswers, passport.first_name ?? null)
-  );
-
-  // Return immediately — the poller will pick up "complete" within 4s of it finishing
-  return NextResponse.json({ status: "pending" });
-}
-
-async function runDecodeWithCleanup(
-  slug: string,
-  db: ReturnType<typeof supabaseAdmin>,
-  birth: BirthData,
-  quizAnswers: QuizAnswers,
-  firstName: string | null
-) {
   try {
+    const birth: BirthData = {
+      date: passport.birth_date,
+      time: passport.birth_time ?? null,
+      place: passport.birth_place,
+      lat: passport.birth_lat ?? null,
+      lng: passport.birth_lng ?? null,
+      timezone: passport.birth_tz ?? null,
+    };
+    const quizAnswers: QuizAnswers = passport.quiz_answers ?? {};
+
     const computedResults = await computeAllBirthModalities(birth);
     const quizResults = await computeAllQuizModalities(quizAnswers);
-
     const synthesis = await synthesizePassport(
-      firstName,
+      passport.first_name ?? null,
       { date: birth.date, place: birth.place },
       computedResults,
       quizResults
@@ -115,13 +119,16 @@ async function runDecodeWithCleanup(
       })
       .eq("share_slug", slug);
 
-    if (updateError) throw new Error(`Supabase update failed: ${updateError.message}`);
+    if (updateError) throw new Error(updateError.message);
+
+    return NextResponse.json({ status: "complete" });
   } catch (err) {
-    console.error("Decode pipeline error:", err);
+    console.error("Decode error:", err);
     const { error: statusError } = await db
       .from("passports")
       .update({ status: "error" })
       .eq("share_slug", slug);
     if (statusError) console.error("Failed to set error status:", statusError);
+    return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
