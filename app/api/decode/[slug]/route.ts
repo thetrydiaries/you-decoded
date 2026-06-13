@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { computeAllBirthModalities } from "@/lib/engine/compute-birth";
 import { computeAllQuizModalities } from "@/lib/engine/compute-quiz";
@@ -7,10 +8,6 @@ import type { BirthData, QuizAnswers } from "@/lib/types";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
-
-// Fires before maxDuration so the catch block always runs and sets status="error"
-// rather than leaving the passport stuck in "processing" if Vercel hard-kills the function.
-const DECODE_TIMEOUT_MS = 50_000;
 
 export async function GET(
   _req: Request,
@@ -37,7 +34,7 @@ export async function GET(
     return NextResponse.json({ status: "error" });
   }
 
-  // Another Vercel instance already claimed this decode — keep polling
+  // Another instance already claimed the decode — fast poll back
   if (passport.status === "processing") {
     return NextResponse.json({ status: "pending" });
   }
@@ -46,10 +43,9 @@ export async function GET(
     return NextResponse.json({ error: "Passport not ready for decoding" }, { status: 400 });
   }
 
-  // Atomic DB-level lock: transition decoding → processing.
-  // Because Vercel spins up a new serverless instance per request, the previous
-  // in-memory Set did nothing for concurrent tabs/reloads. This UPDATE only
-  // succeeds for one instance — the others find 0 rows updated and bail.
+  // Atomic DB-level lock: only one Vercel instance wins this UPDATE.
+  // Every concurrent tab / reload / instance that loses the race finds
+  // 0 rows updated and returns "pending" — no duplicate Claude calls.
   const { data: locked } = await db
     .from("passports")
     .update({ status: "processing" })
@@ -58,87 +54,74 @@ export async function GET(
     .select("id");
 
   if (!locked || locked.length === 0) {
-    // A concurrent instance beat us — it will handle the decode
     return NextResponse.json({ status: "pending" });
   }
 
-  try {
-    const birth: BirthData = {
-      date: passport.birth_date,
-      time: passport.birth_time ?? null,
-      place: passport.birth_place,
-      lat: passport.birth_lat ?? null,
-      lng: passport.birth_lng ?? null,
-      timezone: passport.birth_tz ?? null,
-    };
+  const birth: BirthData = {
+    date: passport.birth_date,
+    time: passport.birth_time ?? null,
+    place: passport.birth_place,
+    lat: passport.birth_lat ?? null,
+    lng: passport.birth_lng ?? null,
+    timezone: passport.birth_tz ?? null,
+  };
+  const quizAnswers: QuizAnswers = passport.quiz_answers ?? {};
 
-    const quizAnswers: QuizAnswers = passport.quiz_answers ?? {};
+  // Run the decode in the background — the response returns immediately so the
+  // client never waits 40-50s for the first poll. Vercel keeps the function alive
+  // (up to maxDuration) while waitUntil finishes, then tears it down cleanly.
+  waitUntil(
+    runDecodeWithCleanup(slug, db, birth, quizAnswers, passport.first_name ?? null)
+  );
 
-    await Promise.race([
-      runDecode(slug, db, birth, quizAnswers, passport.first_name ?? null),
-      new Promise<never>((_, reject) =>
-        setTimeout(
-          () => reject(new Error(`Decode timed out after ${DECODE_TIMEOUT_MS / 1000}s`)),
-          DECODE_TIMEOUT_MS
-        )
-      ),
-    ]);
-
-    return NextResponse.json({ status: "complete" });
-  } catch (err) {
-    console.error("Decode pipeline error:", err);
-
-    const { error: statusError } = await db
-      .from("passports")
-      .update({ status: "error" })
-      .eq("share_slug", slug);
-    if (statusError) console.error("Failed to set error status:", statusError);
-
-    return NextResponse.json(
-      { error: "Decode failed", detail: String(err) },
-      { status: 500 }
-    );
-  }
+  // Return immediately — the poller will pick up "complete" within 4s of it finishing
+  return NextResponse.json({ status: "pending" });
 }
 
-async function runDecode(
+async function runDecodeWithCleanup(
   slug: string,
   db: ReturnType<typeof supabaseAdmin>,
   birth: BirthData,
   quizAnswers: QuizAnswers,
   firstName: string | null
 ) {
-  const computedResults = await computeAllBirthModalities(birth);
-  const quizResults = await computeAllQuizModalities(quizAnswers);
+  try {
+    const computedResults = await computeAllBirthModalities(birth);
+    const quizResults = await computeAllQuizModalities(quizAnswers);
 
-  const synthesis = await synthesizePassport(
-    firstName,
-    { date: birth.date, place: birth.place },
-    computedResults,
-    quizResults
-  );
+    const synthesis = await synthesizePassport(
+      firstName,
+      { date: birth.date, place: birth.place },
+      computedResults,
+      quizResults
+    );
 
-  const finalComputed = mergeSummaries(computedResults, synthesis.cardSummaries);
-  const finalQuiz = mergeSummaries(quizResults, synthesis.cardSummaries);
-  const aiResults = {
-    shadow_profile: synthesis.shadowProfile,
-    core_gift: synthesis.coreGift,
-    cosmic_headline: synthesis.cosmicHeadline,
-  };
+    const finalComputed = mergeSummaries(computedResults, synthesis.cardSummaries);
+    const finalQuiz = mergeSummaries(quizResults, synthesis.cardSummaries);
+    const aiResults = {
+      shadow_profile: synthesis.shadowProfile,
+      core_gift: synthesis.coreGift,
+      cosmic_headline: synthesis.cosmicHeadline,
+    };
 
-  const { error: updateError } = await db
-    .from("passports")
-    .update({
-      computed_results: finalComputed,
-      quiz_results: finalQuiz,
-      ai_results: aiResults,
-      overall_summary: synthesis.overallSummary,
-      status: "complete",
-    })
-    .eq("share_slug", slug);
+    const { error: updateError } = await db
+      .from("passports")
+      .update({
+        computed_results: finalComputed,
+        quiz_results: finalQuiz,
+        ai_results: aiResults,
+        overall_summary: synthesis.overallSummary,
+        status: "complete",
+      })
+      .eq("share_slug", slug);
 
-  if (updateError) {
-    console.error("Supabase update error:", updateError);
-    throw new Error("Failed to save results");
+    if (updateError) throw new Error(`Supabase update failed: ${updateError.message}`);
+  } catch (err) {
+    console.error("Decode pipeline error:", err);
+    const { error: statusError } = await db
+      .from("passports")
+      .update({ status: "error" })
+      .eq("share_slug", slug);
+    if (statusError) console.error("Failed to set error status:", statusError);
   }
 }
