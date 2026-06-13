@@ -4,6 +4,9 @@ import { DecodingPoller } from "./DecodingPoller";
 import { PassportView } from "./PassportView";
 import type { Metadata } from "next";
 
+// Always fetch fresh data — passport status changes from "decoding" → "complete"
+export const dynamic = "force-dynamic";
+
 interface Props {
   params: { slug: string };
 }
@@ -33,6 +36,7 @@ export default async function PassportPage({ params }: Props) {
 
   const isDecoding = passport.status === "decoding" || passport.status === "intake";
   const isComplete = passport.status === "complete";
+  const isError = passport.status === "error";
 
   if (isDecoding) {
     const name = passport.first_name;
@@ -79,7 +83,24 @@ export default async function PassportPage({ params }: Props) {
     return <PassportView passport={passport as any} />;
   }
 
-  // Unexpected status
+  // Decode failed — status was set to "error" by the decode route
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-center px-6">
+        <div>
+          <h1 className="font-display text-3xl text-gold-400">Something went sideways</h1>
+          <p className="mt-3 text-stardust/60">
+            The decode hit an error. This can happen if the stars were briefly unreachable.
+          </p>
+          <a href="/" className="mt-6 inline-block text-gold-500 hover:text-gold-400">
+            Start over →
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // Unexpected status (shouldn't reach here)
   return (
     <div className="min-h-screen flex items-center justify-center text-center px-6">
       <div>

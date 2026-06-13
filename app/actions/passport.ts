@@ -1,6 +1,7 @@
 "use server";
 
 import { nanoid } from "nanoid";
+import { unstable_noStore as noStore } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import type { BirthData, QuizAnswers } from "@/lib/types";
 
@@ -117,8 +118,11 @@ export async function createPassport({
 
 /**
  * Fetches a passport by its share_slug for the results page.
+ * noStore() opts this out of Next.js data cache — critical because
+ * passport status changes from "decoding" → "complete" after the decode runs.
  */
 export async function getPassportBySlug(slug: string) {
+  noStore();
   const supabase = supabaseAdmin();
   const { data, error } = await supabase
     .from("passports")

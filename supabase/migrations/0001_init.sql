@@ -31,8 +31,9 @@ create table public.passports (
   overall_summary  text,              -- "Common Threads" synthesis
 
   -- where this passport is in its journey
+  -- 'error' = decode pipeline failed; stops the poller from retrying indefinitely
   status        text not null default 'intake'
-                check (status in ('intake', 'quiz', 'decoding', 'complete')),
+                check (status in ('intake', 'quiz', 'decoding', 'complete', 'error')),
 
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()

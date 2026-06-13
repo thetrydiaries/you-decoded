@@ -129,15 +129,19 @@ Write each summary as if ${name} will read it alone, quietly, on their phone. Ma
   const client = anthropic();
   const message = await client.messages.create({
     model: CLAUDE_MODEL,
-    max_tokens: 4096,
+    max_tokens: 8000,
     messages: [{ role: "user", content: prompt }],
   });
 
   const rawText =
     message.content[0].type === "text" ? message.content[0].text : "";
 
-  // Parse JSON (strip any accidental markdown fences)
-  const jsonStr = rawText.replace(/^```json\s*/i, "").replace(/\s*```$/, "").trim();
+  // Parse JSON — extract the first { ... } block to handle any surrounding text
+  const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error(`Claude returned no JSON object. Raw response: ${rawText.slice(0, 300)}`);
+  }
+  const jsonStr = jsonMatch[0];
   const parsed = JSON.parse(jsonStr) as {
     cardSummaries: Record<string, string>;
     shadowProfile: { headline: string; subline: string; summary: string };

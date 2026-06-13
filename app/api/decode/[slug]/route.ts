@@ -6,6 +6,16 @@ import { synthesizePassport, mergeSummaries } from "@/lib/claude/synthesize";
 import type { BirthData, QuizAnswers } from "@/lib/types";
 
 export const maxDuration = 60; // Vercel function timeout (seconds)
+export const dynamic = "force-dynamic"; // Never cache — each call must hit Supabase fresh
+
+/**
+ * In-memory lock: tracks slugs currently being decoded.
+ * Prevents concurrent Claude calls for the same passport if the poller
+ * fires multiple times (e.g., multiple tabs open, rapid reloads).
+ * Note: this works within a single server process. For multi-instance
+ * Vercel deployments, replace with a DB-level lock (see DB schema note).
+ */
+const activeDecodes = new Set<string>();
 
 /**
  * GET /api/decode/[slug]
@@ -20,7 +30,7 @@ export const maxDuration = 60; // Vercel function timeout (seconds)
  *  5. Write completed results back to Supabase
  *  6. Return { status: 'complete' }
  *
- * Idempotent: if already complete, returns immediately.
+ * Idempotent: returns immediately if already complete or already in progress.
  */
 export async function GET(
   _req: Request,
@@ -44,9 +54,20 @@ export async function GET(
     return NextResponse.json({ status: "complete" });
   }
 
+  if (passport.status === "error") {
+    return NextResponse.json({ status: "error" });
+  }
+
   if (passport.status !== "decoding") {
     return NextResponse.json({ error: "Passport not ready for decoding" }, { status: 400 });
   }
+
+  // In-memory lock: if already decoding this slug in this process, return pending
+  if (activeDecodes.has(slug)) {
+    return NextResponse.json({ status: "pending" });
+  }
+
+  activeDecodes.add(slug);
 
   try {
     const birth: BirthData = {
@@ -103,10 +124,20 @@ export async function GET(
     return NextResponse.json({ status: "complete" });
   } catch (err) {
     console.error("Decode pipeline error:", err);
-    // Don't leave in broken state — caller can retry
+
+    // Mark as error in DB so repeated page reloads don't spawn new Claude calls.
+    // The user will see an error state with a "start over" prompt.
+    await db
+      .from("passports")
+      .update({ status: "error" })
+      .eq("share_slug", slug)
+      .catch((e) => console.error("Failed to set error status:", e));
+
     return NextResponse.json(
       { error: "Decode failed", detail: String(err) },
       { status: 500 }
     );
+  } finally {
+    activeDecodes.delete(slug);
   }
 }
