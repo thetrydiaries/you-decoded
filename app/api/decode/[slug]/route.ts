@@ -5,12 +5,12 @@ import { computeAllQuizModalities } from "@/lib/engine/compute-quiz";
 import { synthesizePassport, mergeSummaries } from "@/lib/claude/synthesize";
 import type { BirthData, QuizAnswers } from "@/lib/types";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 // Fires before maxDuration so the catch block always runs and sets status="error"
 // rather than leaving the passport stuck in "processing" if Vercel hard-kills the function.
-const DECODE_TIMEOUT_MS = 110_000;
+const DECODE_TIMEOUT_MS = 50_000;
 
 export async function GET(
   _req: Request,
