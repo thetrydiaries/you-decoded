@@ -127,11 +127,21 @@ Respond with a single JSON object following EXACTLY this structure (no markdown 
 Write each summary as if ${name} will read it alone, quietly, on their phone. Make it feel like it was made just for them.`;
 
   const client = anthropic();
-  const message = await client.messages.create({
-    model: CLAUDE_MODEL,
-    max_tokens: 8000,
-    messages: [{ role: "user", content: prompt }],
-  });
+
+  // 55s hard timeout on the API call — gives the catch block time to run
+  // before Vercel's 60s maxDuration hard-kills the function.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 55_000);
+
+  let message: Awaited<ReturnType<typeof client.messages.create>>;
+  try {
+    message = await client.messages.create(
+      { model: CLAUDE_MODEL, max_tokens: 4096, messages: [{ role: "user", content: prompt }] },
+      { signal: controller.signal }
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const rawText =
     message.content[0].type === "text" ? message.content[0].text : "";

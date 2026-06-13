@@ -17,9 +17,10 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   const { slug } = params;
-  const { data, error } = await supabaseAdmin()
+  const db = supabaseAdmin();
+  const { data, error } = await db
     .from("passports")
-    .select("status")
+    .select("status, updated_at")
     .eq("share_slug", slug)
     .single();
 
@@ -29,6 +30,21 @@ export async function GET(
 
   if (data.status === "complete") return NextResponse.json({ status: "complete" });
   if (data.status === "error") return NextResponse.json({ status: "error" });
+
+  // If stuck in "processing" for >2 minutes the decode Lambda was killed without
+  // cleanup — reset to error so the user can retry rather than spinning forever.
+  if (data.status === "processing") {
+    const ageMs = Date.now() - new Date(data.updated_at).getTime();
+    if (ageMs > 2 * 60 * 1000) {
+      await db
+        .from("passports")
+        .update({ status: "error" })
+        .eq("share_slug", slug)
+        .eq("status", "processing");
+      return NextResponse.json({ status: "error" });
+    }
+  }
+
   return NextResponse.json({ status: "pending" });
 }
 
