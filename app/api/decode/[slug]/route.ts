@@ -88,11 +88,11 @@ export async function GET(
   } catch (err) {
     console.error("Decode pipeline error:", err);
 
-    await db
+    const { error: statusError } = await db
       .from("passports")
       .update({ status: "error" })
-      .eq("share_slug", slug)
-      .catch((e: unknown) => console.error("Failed to set error status:", e));
+      .eq("share_slug", slug);
+    if (statusError) console.error("Failed to set error status:", statusError);
 
     return NextResponse.json(
       { error: "Decode failed", detail: String(err) },
