@@ -24,7 +24,7 @@ const SOURCE_DOT: Record<string, string> = {
 const SOURCE_LABEL: Record<string, string> = {
   birth: "From your birth",
   quiz:  "From the quiz",
-  ai:    "AI synthesis",
+  ai:    "Deeper reading",
 };
 
 export function ModalityCard({ def, result, index }: Props) {
@@ -35,15 +35,12 @@ export function ModalityCard({ def, result, index }: Props) {
 
   return (
     <div
-      className="animate-fade-up rounded-2xl border bg-night-900 bg-card-sheen shadow-card
+      className={`animate-fade-up rounded-2xl border bg-night-900 bg-card-sheen shadow-card
                  transition-all duration-300 overflow-hidden
-                 "
+                 ${SOURCE_ACCENT[def.source]}`}
       style={{ animationDelay: delay }}
     >
-      {/* Card border accent */}
-      <div
-        className={`border rounded-2xl h-full transition-colors duration-300 ${SOURCE_ACCENT[def.source]}`}
-      >
+      <div className="h-full">
         <div className="p-6">
           {/* Source tag */}
           <div className="flex items-center gap-2 mb-4">
@@ -77,7 +74,7 @@ export function ModalityCard({ def, result, index }: Props) {
               onClick={() => setExpanded(!expanded)}
               className="mt-4 text-xs text-stardust/40 hover:text-stardust/70 transition-colors flex items-center gap-1"
             >
-              {expanded ? "Less ↑" : "Find out more ↓"}
+              {expanded ? "Close ↑" : "Details ↓"}
             </button>
           )}
         </div>
@@ -93,21 +90,6 @@ export function ModalityCard({ def, result, index }: Props) {
                 <span className="text-stardust">{String(value)}</span>
               </div>
             ))}
-            {result.scores && Object.keys(result.scores).length > 0 && (
-              <div className="pt-2 border-t border-night-800">
-                <p className="text-xs text-stardust/30 mb-2">Raw scores</p>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(result.scores).map(([k, v]) => (
-                    <span
-                      key={k}
-                      className="rounded-full border border-night-700 px-2 py-0.5 text-xs text-stardust/50"
-                    >
-                      {k}: {Math.round(v)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

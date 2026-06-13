@@ -39,3 +39,4 @@ supabase/migrations/  schema
 ```
 
 > **Disclaimer:** You, Decoded is entertainment — not psychological, medical, or astrological advice.
+# you-decoded

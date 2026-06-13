@@ -1,39 +1,38 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 interface Props {
   slug: string;
 }
 
-/**
- * Invisible client component that:
- * 1. Triggers the decode API immediately on mount
- * 2. Polls every 3 seconds until status = 'complete'
- * 3. Reloads the page to reveal results
- */
 export function DecodingPoller({ slug }: Props) {
-  const router = useRouter();
-
-  const poll = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/decode/${slug}`);
-      const data = await res.json();
-      if (data.status === "complete") {
-        router.refresh();
-      }
-    } catch {
-      // Retry on next interval
-    }
-  }, [slug, router]);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
-    // Kick off immediately
-    poll();
-    const interval = setInterval(poll, 3000);
+    async function checkDecode() {
+      // Don't fire a new request while one is already running
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+      try {
+        const res = await fetch(`/api/decode/${slug}`);
+        const data = await res.json();
+        if (data.status === "complete") {
+          // Hard reload — guaranteed to get fresh data from Supabase
+          window.location.reload();
+          return;
+        }
+      } catch {
+        // network error — retry on next tick
+      } finally {
+        isFetchingRef.current = false;
+      }
+    }
+
+    checkDecode(); // kick off immediately
+    const interval = setInterval(checkDecode, 4000);
     return () => clearInterval(interval);
-  }, [poll]);
+  }, [slug]);
 
   return null;
 }

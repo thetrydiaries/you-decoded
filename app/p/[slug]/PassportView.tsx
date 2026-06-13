@@ -52,7 +52,7 @@ export function PassportView({ passport }: Props) {
             {passport.birth_date.split("-").reverse().join(".")} · {passport.birth_place}
           </p>
           <p className="text-xs text-stardust/30 mb-8">
-            18 lenses · {orderedModalities.length} decoded
+            18 lenses decoded
           </p>
           <ShareButton slug={passport.share_slug} name={name} />
         </div>
@@ -64,7 +64,7 @@ export function PassportView({ passport }: Props) {
         {allResults.cosmic_headline && (
           <section className="animate-fade-up">
             <div className="rounded-3xl border border-oracle/50 bg-night-900 bg-card-sheen p-8 sm:p-10 text-center shadow-[0_0_60px_rgba(247,143,184,0.1)]">
-              <p className="text-xs uppercase tracking-widest text-oracle/60 mb-4">Your cosmic headline</p>
+              <p className="text-xs uppercase tracking-widest text-oracle/60 mb-4">Your headline</p>
               <p className="font-display text-3xl sm:text-4xl text-starlight leading-snug mb-3">
                 "{allResults.cosmic_headline.headline}"
               </p>
@@ -143,11 +143,11 @@ export function PassportView({ passport }: Props) {
           <div className="flex items-center gap-3 mb-8">
             <span className="w-2 h-2 rounded-full bg-oracle" />
             <h2 className="text-xs uppercase tracking-widest text-oracle/70">
-              Synthesized by Claude
+              The deeper picture
             </h2>
             <div className="flex-1 h-px bg-night-700" />
           </div>
-          <div className="grid gap-5 sm:grid-cols-1 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-2">
             {aiModalities
               .filter((m) => m.id !== "cosmic_headline") // already shown above
               .map((def, i) => (

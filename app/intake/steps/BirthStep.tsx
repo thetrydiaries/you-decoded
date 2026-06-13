@@ -33,8 +33,8 @@ export function BirthStep({
         Where did you begin?
       </h1>
       <p className="text-stardust/70 mb-10 text-base leading-relaxed">
-        Eight of your modalities are written in your birth data — we need
-        the when and where to decode them.
+        Eight of your results come from when and where you were born — your
+        chart, your zodiac, your numerology, and more.
       </p>
 
       <GlassCard className="space-y-6" accent="gold">

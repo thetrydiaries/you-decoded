@@ -126,20 +126,13 @@ export function QuizStep({
                       }
                     `}
                   />
-                  <div>
-                    <p
-                      className={`text-base leading-snug transition-colors ${
-                        isSelected ? "text-starlight" : "text-stardust"
-                      }`}
-                    >
-                      {opt.label}
-                    </p>
-                    {opt.sublabel && (
-                      <p className="mt-1 text-xs text-stardust/40">
-                        {opt.sublabel}
-                      </p>
-                    )}
-                  </div>
+                  <p
+                    className={`text-base leading-snug transition-colors ${
+                      isSelected ? "text-starlight" : "text-stardust"
+                    }`}
+                  >
+                    {opt.label}
+                  </p>
                 </div>
               </button>
             );

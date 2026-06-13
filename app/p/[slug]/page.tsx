@@ -57,8 +57,8 @@ export default async function PassportPage({ params }: Props) {
           </h1>
           <p className="text-stardust/60 text-base max-w-sm leading-relaxed">
             Calculating 8 cosmic systems, scoring 7 personality maps, and
-            asking Claude to find the threads that connect them all.
-            Takes about 20–30 seconds.
+            weaving it all into something that's actually yours.
+            Usually about a minute.
           </p>
         </div>
 

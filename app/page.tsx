@@ -17,9 +17,9 @@ export default function LandingPage() {
         You, Decoded
       </h1>
       <p className="mt-6 max-w-xl text-lg font-light text-stardust animate-fade-up">
-        {MODALITIES.length} lenses, one you. Your birth chart, your psyche, and
-        a few things only the stars (and Claude) can see — decoded into a
-        single beautiful passport.
+        {MODALITIES.length} lenses, one you. Your birth chart, your psyche,
+        and a few things that only emerge when you look at everything at once —
+        decoded into a single beautiful passport.
       </p>
 
       <div className="mt-10 flex gap-8 text-sm text-stardust animate-fade-up">
@@ -31,7 +31,7 @@ export default function LandingPage() {
           <strong className="text-psyche">{counts.quiz}</strong> from the quiz
         </span>
         <span>
-          <strong className="text-oracle">{counts.ai}</strong> AI-synthesized
+          <strong className="text-oracle">{counts.ai}</strong> synthesized
         </span>
       </div>
 
