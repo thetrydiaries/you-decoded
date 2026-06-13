@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Outfit", system-ui, sans-serif;
+}
+
+body {
+  @apply bg-night-950 text-starlight font-body antialiased;
+  background-attachment: fixed;
+}
+
+::selection {
+  @apply bg-gold-500/30 text-gold-300;
+}
+
+/* Shared input field style */
+.input-field {
+  @apply w-full rounded-xl border border-night-700 bg-night-800 px-4 py-3
+         text-starlight placeholder:text-stardust/30
+         focus:outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/20
+         transition-colors;
+}
+
+/* Subtle starfield laid over the aurora gradient */
+.starfield {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(1px 1px at 20% 30%, rgba(233, 230, 247, 0.8), transparent),
+    radial-gradient(1px 1px at 40% 70%, rgba(233, 230, 247, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 60% 20%, rgba(223, 183, 85, 0.6), transparent),
+    radial-gradient(1px 1px at 80% 50%, rgba(233, 230, 247, 0.6), transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(139, 127, 247, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 90% 85%, rgba(233, 230, 247, 0.4), transparent),
+    radial-gradient(1px 1px at 50% 95%, rgba(223, 183, 85, 0.4), transparent),
+    radial-gradient(1px 1px at 70% 65%, rgba(233, 230, 247, 0.7), transparent),
+    radial-gradient(1px 1px at 30% 10%, rgba(233, 230, 247, 0.5), transparent);
+}
