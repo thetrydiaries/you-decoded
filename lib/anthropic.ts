@@ -8,7 +8,7 @@ import Anthropic from "@anthropic-ai/sdk";
  *  - the three AI modalities (Shadow Profile, Core Gift, Cosmic Headline)
  *  - the overall "Common Threads" summary
  */
-export const CLAUDE_MODEL = "claude-sonnet-4-6";
+export const CLAUDE_MODEL = "claude-haiku-4-5-20251001";
 
 let client: Anthropic | null = null;
 
