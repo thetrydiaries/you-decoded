@@ -93,7 +93,7 @@ export function BirthStep({
             type="text"
             value={birth.place ?? ""}
             onChange={(e) => onBirthChange({ ...birth, place: e.target.value })}
-            placeholder="City, country — be as specific as you like"
+            placeholder="City, country (be specific)"
             className="input-field"
             required
           />
