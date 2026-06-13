@@ -61,6 +61,6 @@ export interface Passport {
   aiResults: Record<string, ModalityResult> | null;
   /** the overall "Common Threads" synthesis across all modalities */
   overallSummary: string | null;
-  status: "intake" | "quiz" | "decoding" | "complete";
+  status: "intake" | "quiz" | "decoding" | "processing" | "complete" | "error";
   createdAt: string;
 }

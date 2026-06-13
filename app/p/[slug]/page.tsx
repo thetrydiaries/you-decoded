@@ -34,7 +34,7 @@ export default async function PassportPage({ params }: Props) {
   const passport = await getPassportBySlug(params.slug);
   if (!passport) notFound();
 
-  const isDecoding = passport.status === "decoding" || passport.status === "intake";
+  const isDecoding = passport.status === "decoding" || passport.status === "processing" || passport.status === "intake";
   const isComplete = passport.status === "complete";
   const isError = passport.status === "error";
 
