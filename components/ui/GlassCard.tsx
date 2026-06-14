@@ -3,16 +3,15 @@ import React from "react";
 interface GlassCardProps {
   children: React.ReactNode;
   className?: string;
-  /** add a subtle coloured glow on the border */
-  accent?: "gold" | "cosmos" | "psyche" | "oracle" | "none";
+  accent?: "copper" | "cosmos" | "psyche" | "oracle" | "none";
 }
 
 const accentClasses: Record<string, string> = {
-  gold: "border-gold-500/30 shadow-glow",
-  cosmos: "border-cosmos/30 shadow-glow-violet",
-  psyche: "border-psyche/30",
-  oracle: "border-oracle/30",
-  none: "border-night-700",
+  copper:  "border-copper-500/25",
+  cosmos:  "border-cosmos/25",
+  psyche:  "border-psyche/25",
+  oracle:  "border-oracle/25",
+  none:    "border-night-700",
 };
 
 export function GlassCard({
@@ -22,11 +21,12 @@ export function GlassCard({
 }: GlassCardProps) {
   return (
     <div
-      className={`
-        rounded-2xl border bg-night-900 bg-card-sheen p-6 shadow-card
-        ${accentClasses[accent]}
-        ${className}
-      `}
+      className={`rounded-xl border bg-night-900 p-6 shadow-card ${accentClasses[accent]} ${className}`}
+      style={{
+        backgroundImage:
+          "radial-gradient(circle, rgba(255,255,255,0.022) 1px, transparent 1px)",
+        backgroundSize: "20px 20px",
+      }}
     >
       {children}
     </div>

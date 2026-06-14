@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ParallaxStarfield } from "@/components/ParallaxStarfield";
 
 export const metadata: Metadata = {
   title: "You, Decoded — Your Personality Passport",
@@ -32,8 +33,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-aurora min-h-screen">
-        <div className="starfield" aria-hidden />
+      <body className="bg-night-950 min-h-screen">
+        <ParallaxStarfield />
         <main className="relative z-10">{children}</main>
       </body>
     </html>

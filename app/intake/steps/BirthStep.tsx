@@ -29,7 +29,7 @@ export function BirthStep({
       <p className="text-sm uppercase tracking-[0.3em] text-stardust/60 mb-3">
         Step 1 of 2
       </p>
-      <h1 className="font-display text-4xl sm:text-5xl text-gold-400 mb-3">
+      <h1 className="font-display text-4xl sm:text-5xl text-copper-400 mb-3">
         Where did you begin?
       </h1>
       <p className="text-stardust/70 mb-10 text-base leading-relaxed">
@@ -37,7 +37,7 @@ export function BirthStep({
         chart, your zodiac, your numerology, and more.
       </p>
 
-      <GlassCard className="space-y-6" accent="gold">
+      <GlassCard className="space-y-6" accent="copper">
         {/* Name */}
         <div>
           <label className="block text-xs uppercase tracking-widest text-stardust/50 mb-2">

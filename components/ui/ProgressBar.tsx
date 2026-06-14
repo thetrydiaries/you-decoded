@@ -10,7 +10,7 @@ interface ProgressBarProps {
 export function ProgressBar({
   current,
   total,
-  colorClass = "bg-gold-500",
+  colorClass = "bg-copper-500",
 }: ProgressBarProps) {
   const pct = Math.round((current / total) * 100);
 

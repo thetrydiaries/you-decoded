@@ -1,12 +1,5 @@
 import type { Config } from "tailwindcss";
 
-/**
- * "You, Decoded" — Celestial Dark theme
- *
- * Deep midnight base, gold + iridescent accents.
- * Each modality category gets its own accent so result cards
- * feel distinct while staying in one family.
- */
 const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
@@ -16,60 +9,54 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Base midnight palette
+        // True deep navy — actual night sky, not AI purple
         night: {
-          950: "#070510", // page background
-          900: "#0d0a1c", // card background
-          800: "#161130", // raised surfaces
-          700: "#221a4a", // borders / dividers
-          600: "#33296b", // hover states
+          950: "#05071A",
+          900: "#09102A",
+          800: "#111830",
+          700: "#1C2545",
+          600: "#273360",
         },
-        // Primary accent — celestial gold
-        gold: {
-          300: "#f5e3b3",
-          400: "#eccf85",
-          500: "#dfb755", // primary CTA / headings
-          600: "#b8923a",
+        // Warm copper — replaces generic gold
+        copper: {
+          300: "#F0D0A8",
+          400: "#D9A96E",
+          500: "#C48A45",
+          600: "#9B6530",
         },
-        // Secondary accents per modality category
-        cosmos: "#8b7ff7", // birth-data modalities (violet)
-        psyche: "#5fd4c4", // quiz modalities (teal)
-        oracle: "#f78fb8", // AI-synthesized (rose)
-        starlight: "#e9e6f7", // primary text on dark
-        stardust: "#9b93c0", // secondary text on dark
+        // Category accents — muted, not electric
+        cosmos:    "#7B9FD4", // steel blue — birth data
+        psyche:    "#6BB5A0", // jade — quiz
+        oracle:    "#D4877A", // terracotta — AI synthesis
+        // Typography
+        starlight: "#ECE8E0", // warm ivory — primary text
+        stardust:  "#8E8BAA", // muted lavender-grey — secondary
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],
-        body: ["var(--font-body)", "system-ui", "sans-serif"],
+        body:    ["var(--font-body)", "system-ui", "sans-serif"],
       },
       backgroundImage: {
-        "aurora":
-          "radial-gradient(ellipse 80% 50% at 20% -10%, rgba(139,127,247,0.25), transparent), radial-gradient(ellipse 60% 40% at 90% 10%, rgba(247,143,184,0.12), transparent), radial-gradient(ellipse 70% 60% at 50% 110%, rgba(95,212,196,0.10), transparent)",
-        "card-sheen":
-          "linear-gradient(135deg, rgba(223,183,85,0.08) 0%, transparent 40%, rgba(139,127,247,0.06) 100%)",
+        // Subtle directional glow — not aurora blobs
+        "page-glow":
+          "radial-gradient(ellipse 70% 50% at 30% 50%, rgba(123,159,212,0.09) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 75% 40%, rgba(212,135,122,0.06) 0%, transparent 60%)",
       },
       boxShadow: {
-        glow: "0 0 40px rgba(223,183,85,0.15)",
-        "glow-violet": "0 0 40px rgba(139,127,247,0.2)",
-        card: "0 4px 32px rgba(0,0,0,0.5)",
+        card:   "0 4px 32px rgba(0,0,0,0.5)",
+        copper: "0 0 32px rgba(196,138,69,0.12)",
       },
       animation: {
-        twinkle: "twinkle 4s ease-in-out infinite",
-        float: "float 8s ease-in-out infinite",
-        "fade-up": "fadeUp 0.7s ease-out both",
+        twinkle:  "twinkle var(--twinkle-dur, 4s) ease-in-out infinite var(--twinkle-delay, 0s)",
+        "fade-up": "fadeUp 0.6s cubic-bezier(0.23,1,0.32,1) both",
       },
       keyframes: {
         twinkle: {
-          "0%, 100%": { opacity: "0.3" },
-          "50%": { opacity: "1" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-12px)" },
+          "0%, 100%": { opacity: "var(--star-min, 0.15)" },
+          "50%":       { opacity: "var(--star-max, 0.7)" },
         },
         fadeUp: {
-          from: { opacity: "0", transform: "translateY(16px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to:   { opacity: "1", transform: "translateY(0)" },
         },
       },
     },

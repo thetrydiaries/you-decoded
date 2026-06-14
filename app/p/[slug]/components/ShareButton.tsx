@@ -20,8 +20,9 @@ export function ShareButton({ slug, name }: Props) {
   return (
     <button
       onClick={handleCopy}
-      className="rounded-full border border-gold-500/40 px-5 py-2 text-sm text-gold-400
-                 hover:border-gold-500 hover:bg-gold-500/10 transition-all duration-200"
+      className="rounded-full border border-copper-500/30 px-5 py-2 text-sm text-copper-400
+                 hover:border-copper-500/60 hover:bg-copper-500/8 transition-[border-color,background] duration-200
+                 active:scale-[0.97]"
     >
       {copied ? "✓ Link copied" : `Share ${name ? `${name}'s` : "your"} passport ↗`}
     </button>

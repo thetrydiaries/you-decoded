@@ -107,8 +107,11 @@ export async function POST(
     };
     const quizAnswers: QuizAnswers = passport.quiz_answers ?? {};
 
-    const computedResults = await computeAllBirthModalities(birth);
-    const quizResults = await computeAllQuizModalities(quizAnswers);
+    const [computedResults, quizResults] = await Promise.all([
+      computeAllBirthModalities(birth),
+      computeAllQuizModalities(quizAnswers),
+    ]);
+
     const synthesis = await synthesizePassport(
       passport.first_name ?? null,
       { date: birth.date, place: birth.place },
